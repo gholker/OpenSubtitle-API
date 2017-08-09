@@ -24,42 +24,43 @@ import java.util.HashMap;
 public class SubtitleInfo {
 
     String IDSubMovieFile;
-    String MovieHash,MovieByteSize,MovieTimeMS,MovieFrames,IDSubtitleFile,SubFileName,SubActualCD,SubSize,SubHash;
-    String IDSubtitle,UserID,SubLanguageID,SubFormat,SubSumCD,SubAddDate,SubDownloadsCnt,SubBad,SubRating;
-    String IDMovie,IDMovieImdb,MovieName,MovieNameEng,MovieYear,MovieImdbRating,UserNickName,ISO639,LanguageName,SubDownloadLink;
+    String MovieHash, MovieByteSize, MovieTimeMS, MovieFrames, IDSubtitleFile, SubFileName, SubActualCD, SubSize, SubHash;
+    String IDSubtitle, UserID, SubLanguageID, SubFormat, SubSumCD, SubAddDate, SubDownloadsCnt, SubBad, SubRating;
+    String IDMovie, IDMovieImdb, MovieName, MovieNameEng, MovieYear, MovieImdbRating, UserNickName, ISO639, LanguageName, SubDownloadLink;
 
-    SubtitleInfo (HashMap<?, ?> info){
-        IDSubMovieFile= (String) info.get("IDSubMovieFile");
-        MovieHash= (String) info.get("MovieHash");
-        MovieByteSize=(String) info.get("MovieByteSize");
-        MovieTimeMS= (String) info.get("MovieTimeMS");
-        MovieFrames=(String) info.get("MovieFrames");
-        IDSubtitleFile=(String) info.get("IDSubtitleFile");
-        SubFileName=(String) info.get("SubFileName");
-        SubActualCD=(String) info.get("SubActualCD");
-        SubSize=(String) info.get("SubSize");
-        SubHash=(String) info.get("SubHash");
-        IDSubtitle=(String)info.get("IDSubtitle");
-        UserID=(String)info.get("UserID");
-        SubLanguageID=(String)info.get("SubLanguageID");
-        SubFormat=(String)info.get("SubFormat");
-        SubSumCD=(String)info.get("SubSumCD");
-        SubAddDate=(String)info.get("SubAddDate");
-        SubDownloadsCnt=(String)info.get("SubDownloadsCnt");
-        SubBad=(String)info.get("SubBad");
-        SubRating=(String)info.get("SubRating");
-        IDMovie=(String)info.get("IDMovie");
-        IDMovieImdb=(String)info.get("IDMovieImdb");
-        MovieName=(String)info.get("MovieName");
-        MovieNameEng=(String)info.get("MovieNameEng");
-        MovieYear=(String)info.get("MovieYear");
-        MovieImdbRating="tt"+(String)info.get("MovieImdbRating");
-        UserNickName=(String)info.get("UserNickName");
-        ISO639=(String)info.get("ISO639");
-        LanguageName=(String)info.get("LanguageName");
-        SubDownloadLink=(String)info.get("SubDownloadLink");
+    SubtitleInfo(HashMap<?, ?> info) {
+        IDSubMovieFile = (String) info.get("IDSubMovieFile");
+        MovieHash = (String) info.get("MovieHash");
+        MovieByteSize = (String) info.get("MovieByteSize");
+        MovieTimeMS = (String) info.get("MovieTimeMS");
+        MovieFrames = (String) info.get("MovieFrames");
+        IDSubtitleFile = (String) info.get("IDSubtitleFile");
+        SubFileName = (String) info.get("SubFileName");
+        SubActualCD = (String) info.get("SubActualCD");
+        SubSize = (String) info.get("SubSize");
+        SubHash = (String) info.get("SubHash");
+        IDSubtitle = (String) info.get("IDSubtitle");
+        UserID = (String) info.get("UserID");
+        SubLanguageID = (String) info.get("SubLanguageID");
+        SubFormat = (String) info.get("SubFormat");
+        SubSumCD = (String) info.get("SubSumCD");
+        SubAddDate = (String) info.get("SubAddDate");
+        SubDownloadsCnt = (String) info.get("SubDownloadsCnt");
+        SubBad = (String) info.get("SubBad");
+        SubRating = (String) info.get("SubRating");
+        IDMovie = (String) info.get("IDMovie");
+        IDMovieImdb = (String) info.get("IDMovieImdb");
+        MovieName = (String) info.get("MovieName");
+        MovieNameEng = (String) info.get("MovieNameEng");
+        MovieYear = (String) info.get("MovieYear");
+        MovieImdbRating = "tt" + (String) info.get("MovieImdbRating");
+        UserNickName = (String) info.get("UserNickName");
+        ISO639 = (String) info.get("ISO639");
+        LanguageName = (String) info.get("LanguageName");
+        SubDownloadLink = (String) info.get("SubDownloadLink");
 
     }
+
     public String getIDSubMovieFile() {
         return IDSubMovieFile;
     }

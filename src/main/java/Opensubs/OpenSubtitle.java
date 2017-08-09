@@ -20,42 +20,45 @@ import org.apache.xmlrpc.XmlRpcException;
 import org.apache.xmlrpc.client.XmlRpcClient;
 import org.apache.xmlrpc.client.XmlRpcClientConfigImpl;
 
-import java.io.*;
-import java.net.HttpURLConnection;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.FilenameFilter;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
-import java.util.*;
-import java.util.zip.GZIPInputStream;
-
-
-
-
-
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 
 
 /**
  * Created by sachin on 7/4/16.
  */
 public class OpenSubtitle {
-    private static String OPEN_SUBTITLES_SERVER="http://api.opensubtitles.org/xml-rpc";
-    private static String MOVIE_EXTENSIONS="mp4,mkv,avi,mov";
+    private static String OPEN_SUBTITLES_SERVER = "http://api.opensubtitles.org/xml-rpc";
+    private static String MOVIE_EXTENSIONS = "mp4,mkv,avi,mov";
 
     XmlRpcClientConfigImpl xmlRpcClientConfig;
     XmlRpcClient xmlRpcClient;
-    String strToken="";
-    String fileHash="";
+    String strToken = "";
+    String fileHash = "";
     File movie;
     FilenameFilter fileNameFilter;
     ArrayList movieFileExtensions;
 
 
-    public OpenSubtitle(){
-        xmlRpcClientConfig=new XmlRpcClientConfigImpl();
-        xmlRpcClient=new XmlRpcClient();
-        movieFileExtensions=new ArrayList();
-        String movieExtensionArray[]=MOVIE_EXTENSIONS.split(",");
-        for(String extn : movieExtensionArray ){
+    public OpenSubtitle() {
+        xmlRpcClientConfig = new XmlRpcClientConfigImpl();
+        xmlRpcClient = new XmlRpcClient();
+        movieFileExtensions = new ArrayList();
+        String movieExtensionArray[] = MOVIE_EXTENSIONS.split(",");
+        for (String extn : movieExtensionArray) {
             movieFileExtensions.add(extn);
         }
 
@@ -71,26 +74,26 @@ public class OpenSubtitle {
     }
 
     public void ServerInfo() throws XmlRpcException {
-        HashMap<?,?> retVal;
-        retVal=(HashMap)xmlRpcClient.execute("ServerInfo", (Object[]) null);
-        System.out.println("ServerInfo"+retVal.toString());
+        HashMap<?, ?> retVal;
+        retVal = (HashMap) xmlRpcClient.execute("ServerInfo", (Object[]) null);
+        System.out.println("ServerInfo" + retVal.toString());
     }
 
-    public List<SubtitleInfo>SearchMoviesOnImdb(String moviename) throws XmlRpcException {
+    public List<SubtitleInfo> SearchMoviesOnImdb(String moviename) throws XmlRpcException {
 
-        List <SubtitleInfo> infos=new ArrayList<>();
-        HashMap<?,?> retVal;
-        List params=new ArrayList();
+        List<SubtitleInfo> infos = new ArrayList<>();
+        HashMap<?, ?> retVal;
+        List params = new ArrayList();
         params.add(strToken);
         params.add(moviename);
-        retVal=(HashMap)xmlRpcClient.execute("SearchMoviesOnIMDB", params);
+        retVal = (HashMap) xmlRpcClient.execute("SearchMoviesOnIMDB", params);
 //        System.out.println("ServerInfo"+retVal.toString());
-        if(retVal.get("data") instanceof Object[]){
-            Object[] data=(Object [])retVal.get("data");
-            for (int i=0;i<data.length;i++) {
-                SubtitleInfo info=new SubtitleInfo((HashMap<?, ?>) data[i]);
-                System.out.println("Id is"+info.getIDMovie());
-                System.out.println("title is"+info.getMovieName());
+        if (retVal.get("data") instanceof Object[]) {
+            Object[] data = (Object[]) retVal.get("data");
+            for (int i = 0; i < data.length; i++) {
+                SubtitleInfo info = new SubtitleInfo((HashMap<?, ?>) data[i]);
+                System.out.println("Id is" + info.getIDMovie());
+                System.out.println("title is" + info.getMovieName());
 //                System.out.println("Link is"+info.getSubDownloadLink());
                 infos.add(info);
             }
@@ -98,172 +101,26 @@ public class OpenSubtitle {
         return infos;
     }
 
-    public List<SubtitleInfo> getMovieSubsByName(String moviename,String limit,String language) throws XmlRpcException {
+    public List<SubtitleInfo> getMovieSubsByName(String moviename, String limit, String language) throws XmlRpcException {
 
-        List <SubtitleInfo> infos=new ArrayList<>();
-        HashMap<?,?> retVal;
-        List params=new ArrayList();
-        params.add(strToken);
-        HashMap <String,Object> query = new HashMap<>();
-        query.put("query",moviename);
-        query.put("sublanguageid",language);
-        HashMap <String,Object> query2=new HashMap<>();
-        query2.put("limit", limit);
-        Object[] paramsArray = new Object[]{strToken, new Object[]{query},query2};
-        retVal=(HashMap)xmlRpcClient.execute("SearchSubtitles", paramsArray);
-        System.out.println("Status code is "+retVal.get("status"));
-        if(retVal.get("data") instanceof Object[]){
-            Object[] data=(Object [])retVal.get("data");
-            for (int i=0;i<data.length;i++) {
-                SubtitleInfo info=new SubtitleInfo((HashMap<?, ?>) data[i]);
-                System.out.println("Id is "+info.getIDMovieImdb());
-                System.out.println("title is "+info.getMovieName());
-                System.out.println("Link is "+info.getSubDownloadLink());
-                System.out.println("Language is "+info.getLanguageName());
-                System.out.println("IMDB rating is "+info.getMovieImdbRating());
-                System.out.println("Year is "+info.getMovieYear());
-                System.out.println("Sub file name "+info.getSubFileName());
-                System.out.println("Date is "+info.getSubAddDate());
-                System.out.println("Rating is "+info.getSubRating());
-                System.out.println("Downloads is "+info.getSubDownloadsCnt());
-                System.out.println("Actual CD name "+info.getSubActualCD());
-                System.out.println("Bad is "+info.getSubBad());
-                infos.add(info);
-            }
-        }
-        System.out.println("Total subs length is " + ((Object[]) retVal.get("data")).length);
-        return infos;
-    }
-
-    public List<SubtitleInfo> getTvSeriesSubs(String TvseriesName,String season,String episode,String limit,String language) throws XmlRpcException {
-
-        List <SubtitleInfo> infos=new ArrayList<>();
-        HashMap<?,?> retVal;
-        List params=new ArrayList();
-        params.add(strToken);
-        HashMap <String,Object> query = new HashMap<>();
-        query.put("query",TvseriesName);
-        query.put("season", season);
-        query.put("episode",episode);
-        query.put("sublanguageid", language);
-        HashMap <String,Object> query2=new HashMap<>();
-        query2.put("limit", limit);
-        Object[] paramsArray = new Object[]{strToken, new Object[]{query},query2};
-        retVal=(HashMap)xmlRpcClient.execute("SearchSubtitles", paramsArray);
-        System.out.println("Status code is " + retVal.get("status"));
-        if(retVal.get("data") instanceof Object[]){
-            Object[] data=(Object [])retVal.get("data");
-            for (int i=0;i<data.length;i++) {
-                SubtitleInfo info=new SubtitleInfo((HashMap<?, ?>) data[i]);
-                System.out.println("Id is "+info.IDMovieImdb);
-                System.out.println("title is "+info.getMovieName());
-                System.out.println(info.getSubDownloadLink());
-                infos.add(info);
-            }
-        }
-        System.out.println("Total subs length is " + ((Object[]) retVal.get("data")).length);
-        return infos;
-    }
-    public void getIMDBmovieDetails(String imdbId) throws XmlRpcException {
-
-        HashMap<?,?> retVal;
-        List params=new ArrayList();
-        params.add(strToken);
-        params.add(imdbId);
-        retVal=(HashMap)xmlRpcClient.execute("SearchMoviesOnIMDB", params);
-        if(retVal.get("data") instanceof Object[]) {
-            Object[] data = (Object[]) retVal.get("data");
-            for (int i = 0; i < data.length; i++) {
-                System.out.println(data[i].toString());
-            }
-        }
-
-    }
-
-    public void getDetailsFromOmdb(String imdbid) throws IOException {
-        URL oracle = new URL("http://www.omdbapi.com/?i="+"tt"+imdbid);
-        URLConnection yc = oracle.openConnection();
-        BufferedReader in = new BufferedReader(new InputStreamReader(
-                yc.getInputStream()));
-        String inputLine;
-        while ((inputLine = in.readLine()) != null)
-            System.out.println(inputLine);
-        in.close();
-    }
-
-    public void getSubLanguages() throws XmlRpcException {
-        HashMap<?,?> retVal;
-        retVal=(HashMap)xmlRpcClient.execute("GetSubLanguages", (Object[]) null);
-//        System.out.println("ServerInfo"+retVal.toString());
-        if(retVal.get("data") instanceof Object[]) {
-            Object[] data = (Object[]) retVal.get("data");
-            for (int i = 0; i < data.length; i++) {
-                System.out.println(((HashMap<?,?>)data[i]).toString());
-            }
-            System.out.println("Length is "+data.length);
-        }
-
-    }
-
-    public String login() throws XmlRpcException{
-        List params=new ArrayList();
-        HashMap<?,?> retVal;
-
-        params.add("");
-        params.add("");
-        params.add("eng");
-        params.add("moviejukebox 1.0.15");
-            retVal=(HashMap)xmlRpcClient.execute("LogIn", params);
-            strToken = (String) retVal.get("token");
-        return strToken;
-
-    }
-
-    public void logOut(){
-        List params=new ArrayList();
-        params.add(strToken);
-        try {
-            xmlRpcClient.execute("LogOut",params);
-        } catch (XmlRpcException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-    }
-
-    public void computeHash(String filePath){
-        try {
-            movie=new File(filePath);
-            fileHash=OpenSubtitleHasher.computeHash(movie);
-            System.out.println(fileHash);
-        } catch (IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-
-    }
-
-    public List <SubtitleInfo> Search(String filePath) throws XmlRpcException {
-        computeHash(filePath);
-        List <SubtitleInfo> infos=new ArrayList<>();
-        Map<String, Object> parameterMap = new HashMap();
-//        System.out.println(fileHash);
-//        System.out.println(movie.length());
+        List<SubtitleInfo> infos = new ArrayList<>();
         HashMap<?, ?> retVal;
-        parameterMap.put("sublanguageid", Locale.getDefault().getISO3Language());
-        parameterMap.put("moviehash", fileHash);
-        String fileName = movie.getName();
-        fileName = fileName.substring(0, fileName.length() - 4);
-        System.out.println(fileName);
-        Object[] paramsArray = new Object[]{strToken, new Object[]{parameterMap}};
-        retVal = (HashMap<?, ?>) xmlRpcClient.execute("SearchSubtitles", paramsArray);
+        List params = new ArrayList();
+        params.add(strToken);
+        HashMap<String, Object> query = new HashMap<>();
+        query.put("query", moviename);
+        query.put("sublanguageid", language);
+        HashMap<String, Object> query2 = new HashMap<>();
+        query2.put("limit", limit);
+        Object[] paramsArray = new Object[]{strToken, new Object[]{query}, query2};
+        retVal = (HashMap) xmlRpcClient.execute("SearchSubtitles", paramsArray);
         System.out.println("Status code is " + retVal.get("status"));
         if (retVal.get("data") instanceof Object[]) {
             Object[] data = (Object[]) retVal.get("data");
             for (int i = 0; i < data.length; i++) {
                 SubtitleInfo info = new SubtitleInfo((HashMap<?, ?>) data[i]);
-//                System.out.println("Id is " + info.getIDMovieImdb());
+                System.out.println("Id is " + info.getIDMovieImdb());
                 System.out.println("title is " + info.getMovieName());
-                System.out.println("Hash is "+info.getMovieHash());
                 System.out.println("Link is " + info.getSubDownloadLink());
                 System.out.println("Language is " + info.getLanguageName());
                 System.out.println("IMDB rating is " + info.getMovieImdbRating());
@@ -278,30 +135,176 @@ public class OpenSubtitle {
             }
         }
         System.out.println("Total subs length is " + ((Object[]) retVal.get("data")).length);
+        return infos;
+    }
+
+    public List<SubtitleInfo> getTvSeriesSubs(String TvseriesName, String season, String episode, String limit, String language) throws XmlRpcException {
+
+        List<SubtitleInfo> infos = new ArrayList<>();
+        HashMap<?, ?> retVal;
+        List params = new ArrayList();
+        params.add(strToken);
+        HashMap<String, Object> query = new HashMap<>();
+        query.put("query", TvseriesName);
+        query.put("season", season);
+        query.put("episode", episode);
+        query.put("sublanguageid", language);
+        HashMap<String, Object> query2 = new HashMap<>();
+        query2.put("limit", limit);
+        Object[] paramsArray = new Object[]{strToken, new Object[]{query}, query2};
+        retVal = (HashMap) xmlRpcClient.execute("SearchSubtitles", paramsArray);
+//        System.out.println("Status code is " + retVal.get("status"));
+        if (retVal.get("data") instanceof Object[]) {
+            Object[] data = (Object[]) retVal.get("data");
+            for (int i = 0; i < data.length; i++) {
+                SubtitleInfo info = new SubtitleInfo((HashMap<?, ?>) data[i]);
+//                System.out.println("Id is " + info.IDMovieImdb);
+//                System.out.println("title is " + info.getMovieName());
+//                System.out.println(info.getSubDownloadLink());
+                infos.add(info);
+            }
+        }
+//        System.out.println("Total subs length is " + ((Object[]) retVal.get("data")).length);
+        return infos;
+    }
+
+    public void getIMDBmovieDetails(String imdbId) throws XmlRpcException {
+
+        HashMap<?, ?> retVal;
+        List params = new ArrayList();
+        params.add(strToken);
+        params.add(imdbId);
+        retVal = (HashMap) xmlRpcClient.execute("SearchMoviesOnIMDB", params);
+        if (retVal.get("data") instanceof Object[]) {
+            Object[] data = (Object[]) retVal.get("data");
+            for (int i = 0; i < data.length; i++) {
+                System.out.println(data[i].toString());
+            }
+        }
+
+    }
+
+    public void getDetailsFromOmdb(String imdbid) throws IOException {
+        URL oracle = new URL("http://www.omdbapi.com/?i=" + "tt" + imdbid);
+        URLConnection yc = oracle.openConnection();
+        BufferedReader in = new BufferedReader(new InputStreamReader(
+                yc.getInputStream()));
+        String inputLine;
+        while ((inputLine = in.readLine()) != null)
+            System.out.println(inputLine);
+        in.close();
+    }
+
+    public void getSubLanguages() throws XmlRpcException {
+        HashMap<?, ?> retVal;
+        retVal = (HashMap) xmlRpcClient.execute("GetSubLanguages", (Object[]) null);
+//        System.out.println("ServerInfo"+retVal.toString());
+        if (retVal.get("data") instanceof Object[]) {
+            Object[] data = (Object[]) retVal.get("data");
+            for (int i = 0; i < data.length; i++) {
+                System.out.println(((HashMap<?, ?>) data[i]).toString());
+            }
+            System.out.println("Length is " + data.length);
+        }
+
+    }
+
+    public String login(String username, String password) throws XmlRpcException {
+        List params = new ArrayList();
+        HashMap<?, ?> retVal;
+
+        params.add(username != null ? username : "");
+        params.add(password != null ? password : "");
+        params.add("eng");
+        params.add("moviejukebox 1.0.15");
+        retVal = (HashMap) xmlRpcClient.execute("LogIn", params);
+        strToken = (String) retVal.get("token");
+        return strToken;
+
+    }
+
+    public void logOut() {
+        List params = new ArrayList();
+        params.add(strToken);
+        try {
+            xmlRpcClient.execute("LogOut", params);
+        } catch (XmlRpcException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+    }
+
+    public void computeHash(String filePath) {
+        try {
+            movie = new File(filePath);
+            fileHash = OpenSubtitleHasher.computeHash(movie);
+//            System.out.println(fileHash);
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+
+    }
+
+    public List<SubtitleInfo> Search(String filePath) throws XmlRpcException {
+        computeHash(filePath);
+        List<SubtitleInfo> infos = new ArrayList<>();
+        Map<String, Object> parameterMap = new HashMap();
+//        System.out.println(fileHash);
+//        System.out.println(movie.length());
+        HashMap<?, ?> retVal;
+        parameterMap.put("sublanguageid", Locale.getDefault().getISO3Language());
+        parameterMap.put("moviehash", fileHash);
+        String fileName = movie.getName();
+        fileName = fileName.substring(0, fileName.length() - 4);
+//        System.out.println(fileName);
+        Object[] paramsArray = new Object[]{strToken, new Object[]{parameterMap}};
+        retVal = (HashMap<?, ?>) xmlRpcClient.execute("SearchSubtitles", paramsArray);
+//        System.out.println("Status code is " + retVal.get("status"));
+        if (retVal.get("data") instanceof Object[]) {
+            Object[] data = (Object[]) retVal.get("data");
+            for (int i = 0; i < data.length; i++) {
+                SubtitleInfo info = new SubtitleInfo((HashMap<?, ?>) data[i]);
+//                System.out.println("Id is " + info.getIDMovieImdb());
+//                System.out.println("title is " + info.getMovieName());
+//                System.out.println("Hash is " + info.getMovieHash());
+//                System.out.println("Link is " + info.getSubDownloadLink());
+//                System.out.println("Language is " + info.getLanguageName());
+//                System.out.println("IMDB rating is " + info.getMovieImdbRating());
+//                System.out.println("Year is " + info.getMovieYear());
+//                System.out.println("Sub file name " + info.getSubFileName());
+//                System.out.println("Date is " + info.getSubAddDate());
+//                System.out.println("Rating is " + info.getSubRating());
+//                System.out.println("Downloads is " + info.getSubDownloadsCnt());
+//                System.out.println("Actual CD name " + info.getSubActualCD());
+//                System.out.println("Bad is " + info.getSubBad());
+                infos.add(info);
+            }
+        }
+//        System.out.println("Total subs length is " + ((Object[]) retVal.get("data")).length);
 
         return infos;
     }
 
 
-
-    public void downloadSubtitle(URL url,String filename) throws IOException {
+    public void downloadSubtitle(URL url, String filename) throws IOException {
 
         URLConnection yc = url.openConnection();
         BufferedReader in = new BufferedReader(new InputStreamReader(
                 yc.getInputStream()));
-        String inputLine,total="";
+        String inputLine, total = "";
         while ((inputLine = in.readLine()) != null)
-            total+=inputLine+"\n";
+            total += inputLine + "\n";
         in.close();
         BufferedWriter output = null;
         try {
             File filSubtitleFile = new File(filename);
             output = new BufferedWriter(new FileWriter(filSubtitleFile));
             output.write(total);
-        } catch ( IOException e ) {
+        } catch (IOException e) {
             e.printStackTrace();
         } finally {
-            if ( output != null ) {
+            if (output != null) {
                 output.close();
             }
         }
@@ -356,8 +359,6 @@ public class OpenSubtitle {
 //                e.printStackTrace();
 //            }
 //        }
-
-
 
 
     }
