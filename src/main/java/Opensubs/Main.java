@@ -65,10 +65,12 @@ public class Main {
                 .desc("directory or file to find subtitles for")
                 .build());
         options.addOption("H", false, "disable hash search");
+        options.addOption("P", false, "include parent folder name in search");
         options.addOption("F", false, "force re-fetch of subtitles even if one is found (this will overwrite existing .srt files!)");
         CommandLineParser parser = new DefaultParser();
         boolean force = false;
         boolean disableHash = true;
+        boolean useParentFolderName = false;
         String root = null;
         String username = "";
         String password = "";
@@ -82,6 +84,7 @@ public class Main {
             username = cmd.getOptionValue("u");
             password = cmd.getOptionValue("p");
             disableHash = cmd.hasOption("H");
+            useParentFolderName = cmd.hasOption("P");
         } catch (ParseException exp) {
             System.err.println("Parsing failed.  Reason: " + exp.getMessage());
             System.exit(1);
@@ -148,7 +151,11 @@ public class Main {
                         String query = "";
 
                         // start with Folder and Filename
-                        String name = p.getParent().getFileName() + " " + filename.replace(extension, "");
+                        String name = filename.replace(extension, "");
+                        if (useParentFolderName) {
+                            name = p.getParent().getFileName() + " " + name;
+                        }
+
                         // remove non-words
                         {
                             Pattern pattern = Pattern.compile("([^0-9\\W_]*)");
@@ -178,8 +185,8 @@ public class Main {
                         // remove special words
                         query = Arrays.stream(query.split(" "))
                                 .filter(word -> !forbiddenWords.contains(word.toLowerCase()))
-                                .reduce("", (s, s2) -> s + " " + s2);
-
+                                .reduce("", (s, s2) -> s + " " + s2)
+                                .trim();
 
                         System.out.println("\tQuerying: `" + query + "` S" + season + "E" + episode);
                         results = openSubtitle.getTvSeriesSubs(
