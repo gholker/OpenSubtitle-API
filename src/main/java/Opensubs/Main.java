@@ -13,6 +13,7 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -42,11 +43,13 @@ public class Main {
         skippableExtensions.add(".gz");
     }
 
-    private static final Set<String> removableSubstrings = new HashSet<>();
+    private static final Set<String> forbiddenWords = new HashSet<>();
 
     static {
-        removableSubstrings.add("HD");
-        removableSubstrings.add("AC");
+        forbiddenWords.add("ac");
+        forbiddenWords.add("hd");
+        forbiddenWords.add("season");
+        forbiddenWords.add("episode");
     }
 
     public static void main(String[] args) throws IOException, XmlRpcException {
@@ -61,9 +64,11 @@ public class Main {
                 .hasArg()
                 .desc("directory or file to find subtitles for")
                 .build());
+        options.addOption("H", false, "disable hash search");
         options.addOption("F", false, "force re-fetch of subtitles even if one is found (this will overwrite existing .srt files!)");
         CommandLineParser parser = new DefaultParser();
         boolean force = false;
+        boolean disableHash = true;
         String root = null;
         String username = "";
         String password = "";
@@ -76,6 +81,7 @@ public class Main {
             }
             username = cmd.getOptionValue("u");
             password = cmd.getOptionValue("p");
+            disableHash = cmd.hasOption("H");
         } catch (ParseException exp) {
             System.err.println("Parsing failed.  Reason: " + exp.getMessage());
             System.exit(1);
@@ -117,8 +123,14 @@ public class Main {
                     System.out.println("Found existing subtitle. Skipping: " + p.toString());
                 } else {
                     // attempt hash search
-                    List<SubtitleInfo> results = openSubtitle.Search(p.toAbsolutePath().toString());
-
+                    System.out.println("File - `" + p.getFileName().toString() + "`");
+                    List<SubtitleInfo> results;
+                    if (!disableHash) {
+                        results = openSubtitle.Search(p.toAbsolutePath().toString());
+                        System.out.println("\t" + results.size() + " results from hash search. ");
+                    } else {
+                        results = Collections.emptyList();
+                    }
 
                     // attempt search by name
                     if (results.isEmpty()) {
@@ -132,40 +144,67 @@ public class Main {
                             season = "";
                             episode = "";
                         }
-                        Pattern pattern = Pattern.compile("([^0-9\\W_]*)");
-                        String filenameWithoutExtension = filename.replace(extension, "");
-                        Matcher matcher = pattern.matcher(filenameWithoutExtension);
-                        int index = 0;
+
                         String query = "";
-                        while (index < filenameWithoutExtension.length()
-                                && matcher.find(index)) {
-                            String group = matcher.group();
-                            if (group.length() > 1 && !removableSubstrings.contains(group.toUpperCase())) {
-                                query += group + " ";
+
+                        // start with Folder and Filename
+                        String name = p.getParent().getFileName() + " " + filename.replace(extension, "");
+                        // remove non-words
+                        {
+                            Pattern pattern = Pattern.compile("([^0-9\\W_]*)");
+                            Matcher matcher = pattern.matcher(name);
+                            int index = 0;
+                            while (index < name.length()
+                                    && matcher.find(index)) {
+                                String group = matcher.group();
+                                if (group.length() > 1) {
+                                    query += group + " ";
+                                }
+                                index = matcher.end() + 1;
                             }
-                            index = matcher.end() + 1;
+                            query = query.trim();
                         }
-                        query = query.trim();
-                        System.out.println("Searching for: `" + query + "` S" + season + "E" + episode);
+
+                        // find `part N`
+                        {
+                            Pattern pattern = Pattern.compile("([Pp][Aa][Rr][Tt] \\d+)");
+                            Matcher matcher = pattern.matcher(filename);
+                            if (matcher.find()) {
+                                String group = matcher.group();
+                                query += " " + group;
+                            }
+                        }
+
+                        // remove special words
+                        query = Arrays.stream(query.split(" "))
+                                .filter(word -> !forbiddenWords.contains(word.toLowerCase()))
+                                .reduce("", (s, s2) -> s + " " + s2);
+
+
+                        System.out.println("\tQuerying: `" + query + "` S" + season + "E" + episode);
                         results = openSubtitle.getTvSeriesSubs(
                                 query,
                                 season,
                                 episode,
                                 "10",
                                 "eng");
+                        System.out.println("\t\t" + results.size() + " results from search. ");
                     }
 
-
+                    results.forEach(i -> System.out.println("\t\t" + i.getMovieName()));
                     Optional<SubtitleInfo> subtitleInfo = results.stream()
                             .filter(i -> i.getLanguageName().toLowerCase().startsWith("eng"))
                             .findFirst();
                     if (subtitleInfo.isPresent()) {
                         SubtitleInfo subtitleInfo1 = subtitleInfo.get();
                         URL url = new URL(subtitleInfo1.getSubDownloadLink().replaceAll("\\.gz", ""));
+                        System.out.print("\tDownloading... ");
                         openSubtitle.downloadSubtitle(url, subtitlePath.toString());
+                        System.out.println("DONE");
                     } else {
-                        System.out.println("No subtitle found for: " + p.toString());
+                        System.out.println("\tNot found");
                     }
+                    System.out.println();
                 }
             }
 
@@ -175,21 +214,21 @@ public class Main {
     }
 
     public static class SeasonEpisode {
-        public final String season;
-        public final String episode;
+        final String season;
+        final String episode;
 
-        public SeasonEpisode(String season, String episode) {
+        SeasonEpisode(String season, String episode) {
             this.season = season;
             this.episode = episode;
         }
     }
 
-    public static Optional<SeasonEpisode> findSeasonEpisode(String filename) {
-        Pattern pattern = Pattern.compile("([sS]\\d+[eE]\\d+)");
+    private static Optional<SeasonEpisode> findSeasonEpisode(String filename) {
+        Pattern pattern = Pattern.compile("([sS]\\d+[xeE]\\d+)");
         Matcher matcher = pattern.matcher(filename);
         if (matcher.find()) {
             String seasonEpisode = matcher.group(1).toLowerCase();
-            int indexOfE = seasonEpisode.indexOf('e');
+            int indexOfE = Math.max(seasonEpisode.indexOf('e'), seasonEpisode.indexOf('x'));
             String season = seasonEpisode.substring(1, indexOfE);
             String episode = seasonEpisode.substring(indexOfE + 1);
             return Optional.of(new SeasonEpisode(season, episode));
