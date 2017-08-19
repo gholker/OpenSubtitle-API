@@ -13,44 +13,66 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class Main {
+    private static final Set<String> possibleExtensions = Stream.of(
+            "mp4",
+            "avi",
+            "mkv",
+            "m4v"
+    ).map(s -> "." + s).collect(Collectors.toSet());
 
-    private static final Set<String> possibleExtensions = new HashSet<>();
+    private static final Set<String> skippableExtensions = Stream.of(
+            "wmv",
+            "png",
+            "mov",
+            "srt",
+            "txt",
+            "jpg",
+            "jpeg",
+            "DS_Store",
+            "gz",
+            "dat",
+            "zip",
+            "nfo",
+            "db",
+            "m2ts",
+            "sub",
+            "rar",
+            "idx",
+            "sfv"
+    ).map(s -> "." + s).collect(Collectors.toSet());
 
-    static {
-        possibleExtensions.add(".mp4");
-        possibleExtensions.add(".mkv");
-        possibleExtensions.add(".avi");
-    }
-
-    private static final Set<String> skippableExtensions = new HashSet<>();
-
-    static {
-        skippableExtensions.add(".srt");
-        skippableExtensions.add(".txt");
-        skippableExtensions.add(".jpg");
-        skippableExtensions.add(".DS_Store");
-        skippableExtensions.add(".gz");
-    }
-
-    private static final Set<String> forbiddenWords = new HashSet<>();
-
-    static {
-        forbiddenWords.add("ac");
-        forbiddenWords.add("hd");
-        forbiddenWords.add("season");
-        forbiddenWords.add("episode");
-    }
+    private static final Set<String> forbiddenWords = Stream.of(
+            "AC",
+            "HD",
+            "season",
+            "episode",
+            "WEB",
+            "DL",
+            "HDCLUB",
+            "BDrip",
+            "multisub",
+            "BluRay",
+            "molpol",
+            "HEVC",
+            "anoXmous",
+            "sujaidr",
+            "DVDScr",
+            "xvid",
+            "HQ",
+            "CM"
+    ).map(String::toLowerCase).collect(Collectors.toSet());
 
     public static void main(String[] args) throws IOException, XmlRpcException {
         Options options = new Options();
@@ -66,10 +88,12 @@ public class Main {
                 .build());
         options.addOption("H", false, "disable hash search");
         options.addOption("P", false, "include parent folder name in search");
+        options.addOption("R", false, "recursive");
         options.addOption("F", false, "force re-fetch of subtitles even if one is found (this will overwrite existing .srt files!)");
         CommandLineParser parser = new DefaultParser();
         boolean force = false;
         boolean disableHash = true;
+        boolean recursive = false;
         boolean useParentFolderName = false;
         String root = null;
         String username = "";
@@ -85,6 +109,7 @@ public class Main {
             password = cmd.getOptionValue("p");
             disableHash = cmd.hasOption("H");
             useParentFolderName = cmd.hasOption("P");
+            recursive = cmd.hasOption("R");
         } catch (ParseException exp) {
             System.err.println("Parsing failed.  Reason: " + exp.getMessage());
             System.exit(1);
@@ -97,17 +122,25 @@ public class Main {
             System.exit(1);
         }
 
-        List<Path> paths;
+        final List<Path> paths = new ArrayList<>();
         if (Files.isRegularFile(rootPath)) {
-            paths = Collections.singletonList(rootPath);
+            paths.add(rootPath);
         } else {
-            paths = Files.list(rootPath).collect(Collectors.toList());
+            paths.addAll(Files.list(rootPath).collect(Collectors.toList()));
         }
 
         OpenSubtitle openSubtitle = new OpenSubtitle();
         openSubtitle.login(username, password);
 
-        for (Path p : paths) {
+        while (!paths.isEmpty()) {
+            Path p = paths.remove(0);
+            if (Files.isDirectory(p)) {
+                if (recursive) {
+                    paths.addAll(Files.list(p).collect(Collectors.toList()));
+                }
+                continue;
+            }
+
             String filename = p.getFileName().toString();
             int indexOfExtension = filename.lastIndexOf('.');
             if (indexOfExtension > -1) {
@@ -129,7 +162,7 @@ public class Main {
                     System.out.println("File - `" + p.getFileName().toString() + "`");
                     List<SubtitleInfo> results;
                     if (!disableHash) {
-                        results = openSubtitle.Search(p.toAbsolutePath().toString());
+                        results = openSubtitle.Search(p.toAbsolutePath().toString(), "eng");
                         System.out.println("\t" + results.size() + " results from hash search. ");
                     } else {
                         results = Collections.emptyList();

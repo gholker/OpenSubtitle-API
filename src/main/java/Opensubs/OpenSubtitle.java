@@ -33,7 +33,6 @@ import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 
 
@@ -246,14 +245,14 @@ public class OpenSubtitle {
 
     }
 
-    public List<SubtitleInfo> Search(String filePath) throws XmlRpcException {
+    public List<SubtitleInfo> Search(String filePath, String language) throws XmlRpcException {
         computeHash(filePath);
         List<SubtitleInfo> infos = new ArrayList<>();
         Map<String, Object> parameterMap = new HashMap();
 //        System.out.println(fileHash);
 //        System.out.println(movie.length());
         HashMap<?, ?> retVal;
-        parameterMap.put("sublanguageid", Locale.getDefault().getISO3Language());
+        parameterMap.put("sublanguageid", language);
         parameterMap.put("moviehash", fileHash);
         String fileName = movie.getName();
         fileName = fileName.substring(0, fileName.length() - 4);
