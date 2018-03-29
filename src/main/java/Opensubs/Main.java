@@ -86,6 +86,10 @@ public class Main {
                 .hasArg()
                 .desc("directory or file to find subtitles for")
                 .build());
+        options.addOption(Option.builder("name")
+                .hasArg()
+                .desc("series name to be used when searching")
+                .build());
         options.addOption("H", false, "disable hash search");
         options.addOption("P", false, "include parent folder name in search");
         options.addOption("R", false, "recursive");
@@ -96,6 +100,7 @@ public class Main {
         boolean recursive = false;
         boolean useParentFolderName = false;
         String root = null;
+        String seriesName = null;
         String username = "";
         String password = "";
         try {
@@ -105,6 +110,7 @@ public class Main {
             if (root == null || root.isEmpty()) {
                 System.exit(1);
             }
+            seriesName = cmd.getOptionValue("name");
             username = cmd.getOptionValue("u");
             password = cmd.getOptionValue("p");
             disableHash = cmd.hasOption("H");
@@ -187,6 +193,9 @@ public class Main {
                         String name = filename.replace(extension, "");
                         if (useParentFolderName) {
                             name = p.getParent().getFileName() + " " + name;
+                        }
+                        if (seriesName != null && seriesName.trim().length() > 0) {
+                            name = seriesName.trim();
                         }
 
                         // remove non-words
