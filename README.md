@@ -7,7 +7,7 @@ Find and download subtitles for a movie file from your command line:
 `java -jar fetch-subs.jar -u <username> -p <password> -file <path to file or folder>`
 
 Options:
-- `-name "<name of show or movie>` to specify the name in case the name parsed from the file name is incorrect
+- `-name "<name of show or movie>"` to specify the name in case the name parsed from the file name is incorrect
 - `-H` disable the search by hash
 - `-P` include the parent folder name in the search query
 - `-R` recursive
